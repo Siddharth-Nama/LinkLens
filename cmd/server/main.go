@@ -37,17 +37,6 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, cfg config.Config, log *slog.Logger) error {
-	log.Info("linklens ready",
-		"port", cfg.Port,
-		"linkedin_configured", cfg.LinkedInConfigured(),
-		"api_key_required", cfg.APIKey != "",
-	)
-	<-ctx.Done()
-	log.Info("shutdown complete")
-	return nil
-}
-
 func newLogger(w io.Writer, level slog.Level) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: level}))
 }
