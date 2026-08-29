@@ -68,6 +68,7 @@ func TestFetchProfileStatusErrors(t *testing.T) {
 		status int
 		want   error
 	}{
+		{name: "redirect", status: http.StatusFound, want: ErrSessionExpired},
 		{name: "unauthorized", status: http.StatusUnauthorized, want: ErrSessionExpired},
 		{name: "forbidden", status: http.StatusForbidden, want: ErrSessionExpired},
 		{name: "linkedin 999", status: 999, want: ErrSessionExpired},

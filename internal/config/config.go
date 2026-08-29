@@ -21,8 +21,8 @@ type Config struct {
 func Load() (Config, error) {
 	cfg := Config{
 		Port:               port(),
-		LinkedInLIAt:       strings.TrimSpace(os.Getenv("LI_AT")),
-		LinkedInJSESSIONID: strings.TrimSpace(os.Getenv("LI_JSESSIONID")),
+		LinkedInLIAt:       sanitizeEnvCookie(os.Getenv("LI_AT")),
+		LinkedInJSESSIONID: sanitizeEnvCookie(os.Getenv("LI_JSESSIONID")),
 		APIKey:             strings.TrimSpace(os.Getenv("API_KEY")),
 	}
 
@@ -57,6 +57,27 @@ func (c Config) LinkedInConfigured() bool {
 
 func (c Config) APIKeyRequired() bool {
 	return c.APIKey != ""
+}
+
+func sanitizeEnvCookie(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	if i := strings.IndexByte(s, '='); i > 0 {
+		name := strings.ToLower(s[:i])
+		if name == "li_at" || name == "jsessionid" {
+			s = strings.TrimSpace(s[i+1:])
+		}
+	}
+	for {
+		trimmed := strings.Trim(s, `"`)
+		if trimmed == s {
+			break
+		}
+		s = trimmed
+	}
+	return strings.TrimSpace(s)
 }
 
 func port() string {

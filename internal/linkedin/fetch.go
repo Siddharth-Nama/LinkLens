@@ -49,6 +49,8 @@ func (c *Client) FetchProfile(ctx context.Context, memberIdentity string) ([]byt
 	switch resp.StatusCode {
 	case http.StatusOK:
 		return body, nil
+	case http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		return nil, ErrSessionExpired
 	case http.StatusUnauthorized, http.StatusForbidden, 999:
 		return nil, ErrSessionExpired
 	case http.StatusNotFound:

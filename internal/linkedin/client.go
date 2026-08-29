@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -30,11 +29,17 @@ func New(liAt, jsessionID string, timeout time.Duration) *Client {
 		timeout = 20 * time.Second
 	}
 	return &Client{
-		http:         &http.Client{Timeout: timeout},
+		http: &http.Client{
+			Timeout: timeout,
+			// LinkedIn redirects unauthenticated Voyager calls to login; do not follow.
+			CheckRedirect: func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 		baseURL:      defaultBaseURL,
 		decorationID: DefaultDecorationID,
-		liAt:         strings.TrimSpace(liAt),
-		jsessionID:   strings.Trim(strings.TrimSpace(jsessionID), `"`),
+		liAt:         sanitizeSessionValue(liAt),
+		jsessionID:   sanitizeSessionValue(jsessionID),
 		userAgent:    defaultUserAgent,
 	}
 }

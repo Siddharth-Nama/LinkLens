@@ -42,6 +42,33 @@ func TestNewRequestSetsVoyagerHeaders(t *testing.T) {
 	}
 }
 
+func TestSanitizeQuotedJSESSIONIDVariants(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{in: `"ajax:123"`, want: "ajax:123"},
+		{in: `"""ajax:123"""`, want: "ajax:123"},
+		{in: `JSESSIONID="ajax:123"`, want: "ajax:123"},
+		{in: `  "ajax:123"  `, want: "ajax:123"},
+	}
+	for _, tt := range tests {
+		c := New("x", tt.in, time.Second)
+		req, err := c.NewRequest(context.Background(), http.MethodGet, "https://www.linkedin.com/")
+		if err != nil {
+			t.Fatalf("NewRequest(%q): %v", tt.in, err)
+		}
+		if got := req.Header.Get("Csrf-Token"); got != tt.want {
+			t.Errorf("Csrf-Token for %q = %q, want %q", tt.in, got, tt.want)
+		}
+		for _, cookie := range req.Cookies() {
+			if cookie.Name == "JSESSIONID" && cookie.Value != tt.want {
+				t.Errorf("JSESSIONID for %q = %q, want %q", tt.in, cookie.Value, tt.want)
+			}
+		}
+	}
+}
+
 func TestCsrfTokenWithoutQuotes(t *testing.T) {
 	c := New("x", "ajax:456", time.Second)
 	req, err := c.NewRequest(context.Background(), http.MethodGet, "https://www.linkedin.com/")
