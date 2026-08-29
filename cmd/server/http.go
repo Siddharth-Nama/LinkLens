@@ -17,12 +17,6 @@ type healthResponse struct {
 	LinkedInConfigured bool   `json:"linkedin_configured"`
 }
 
-func newMux(cfg config.Config) *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", healthHandler(cfg))
-	return mux
-}
-
 func newHTTPServer(cfg config.Config, handler http.Handler) *http.Server {
 	return &http.Server{
 		Addr:         ":" + cfg.Port,
@@ -49,7 +43,8 @@ func run(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 		"linkedin_configured", cfg.LinkedInConfigured(),
 		"api_key_required", cfg.APIKey != "",
 	)
-	return serve(ctx, newHTTPServer(cfg, newMux(cfg)), log)
+	profiles := newProfileService(cfg)
+	return serve(ctx, newHTTPServer(cfg, newMuxWithProfiles(cfg, profiles)), log)
 }
 
 func serve(ctx context.Context, srv *http.Server, log *slog.Logger) error {
