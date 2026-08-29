@@ -1,0 +1,91 @@
+{
+  "data": {
+    "*elements": ["urn:li:fsd_profile:ACoAAATest"]
+  },
+  "included": [
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Profile",
+      "entityUrn": "urn:li:fsd_profile:ACoAAATest",
+      "publicIdentifier": "jane-doe",
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "headline": "Software Engineer at Acme",
+      "summary": "Building reliable systems.",
+      "industryName": "Technology",
+      "geoLocationName": "San Francisco Bay Area",
+      "connections": 500,
+      "followersCount": 1200,
+      "profilePicture": {
+        "displayImageReference": {
+          "vectorImage": {
+            "rootUrl": "https://media.licdn.com/dms/image/profile/",
+            "artifacts": [
+              {
+                "width": 200,
+                "height": 200,
+                "fileIdentifyingUrlPathSegment": "jane-200.jpg"
+              }
+            ]
+          }
+        }
+      },
+      "backgroundPicture": {
+        "vectorImage": {
+          "rootUrl": "https://media.licdn.com/dms/image/background/",
+          "artifacts": [
+            {
+              "width": 800,
+              "height": 200,
+              "fileIdentifyingUrlPathSegment": "bg.jpg"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Position",
+      "title": "Senior Engineer",
+      "companyName": "Acme Corp",
+      "geoLocationName": "Remote",
+      "description": "Led platform work.",
+      "current": true,
+      "timePeriod": {
+        "startDate": { "month": 3, "year": 2020 }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Education",
+      "schoolName": "State University",
+      "degreeName": "B.S.",
+      "fieldOfStudy": "Computer Science",
+      "timePeriod": {
+        "startDate": { "year": 2012 },
+        "endDate": { "year": 2016 }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "name": "Go",
+      "endorsementCount": 42
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "name": "Distributed Systems",
+      "endorsementCount": 18
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Certification",
+      "name": "AWS Solutions Architect",
+      "authority": "Amazon Web Services",
+      "url": "https://aws.amazon.com/certification/",
+      "timePeriod": {
+        "startDate": { "month": 6, "year": 2021 }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Language",
+      "name": "English",
+      "proficiency": "NATIVE_OR_BILINGUAL"
+    }
+  ]
+}
