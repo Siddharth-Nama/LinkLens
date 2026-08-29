@@ -13,13 +13,16 @@ const (
 	acceptValue      = "application/vnd.linkedin.normalized+json+2.1"
 	restliVersion    = "2.0.0"
 	referer          = "https://www.linkedin.com/"
+	defaultBaseURL   = "https://www.linkedin.com"
 )
 
 type Client struct {
-	http       *http.Client
-	liAt       string
-	jsessionID string
-	userAgent  string
+	http         *http.Client
+	baseURL      string
+	decorationID string
+	liAt         string
+	jsessionID   string
+	userAgent    string
 }
 
 func New(liAt, jsessionID string, timeout time.Duration) *Client {
@@ -27,10 +30,12 @@ func New(liAt, jsessionID string, timeout time.Duration) *Client {
 		timeout = 20 * time.Second
 	}
 	return &Client{
-		http:       &http.Client{Timeout: timeout},
-		liAt:       strings.TrimSpace(liAt),
-		jsessionID: strings.Trim(strings.TrimSpace(jsessionID), `"`),
-		userAgent:  defaultUserAgent,
+		http:         &http.Client{Timeout: timeout},
+		baseURL:      defaultBaseURL,
+		decorationID: DefaultDecorationID,
+		liAt:         strings.TrimSpace(liAt),
+		jsessionID:   strings.Trim(strings.TrimSpace(jsessionID), `"`),
+		userAgent:    defaultUserAgent,
 	}
 }
 

@@ -1,0 +1,14 @@
+{
+  "data": {
+    "*elements": ["urn:li:fsd_profile:ACoAAATest"]
+  },
+  "included": [
+    {
+      "entityUrn": "urn:li:fsd_profile:ACoAAATest",
+      "publicIdentifier": "jane-doe",
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "headline": "Software Engineer"
+    }
+  ]
+}
