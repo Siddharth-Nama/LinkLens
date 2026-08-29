@@ -30,6 +30,7 @@ func (c *Client) FetchProfile(ctx context.Context, memberIdentity string) ([]byt
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Referer", profileReferer(memberIdentity))
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -71,4 +72,8 @@ func (c *Client) profileURL(memberIdentity string) (string, error) {
 	q.Set("decorationId", c.decorationID)
 	u.RawQuery = q.Encode()
 	return u.String(), nil
+}
+
+func profileReferer(memberIdentity string) string {
+	return defaultBaseURL + "/in/" + memberIdentity + "/"
 }

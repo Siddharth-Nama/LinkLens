@@ -21,9 +21,11 @@ func TestFetchProfileOK(t *testing.T) {
 
 	var gotPath string
 	var gotQuery string
+	var gotReferer string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
+		gotReferer = r.Header.Get("Referer")
 		if r.Header.Get("Csrf-Token") != "ajax:123" {
 			t.Errorf("Csrf-Token = %q", r.Header.Get("Csrf-Token"))
 		}
@@ -49,6 +51,9 @@ func TestFetchProfileOK(t *testing.T) {
 	}
 	if q.Get("decorationId") != DefaultDecorationID {
 		t.Errorf("decorationId = %q", q.Get("decorationId"))
+	}
+	if gotReferer != "https://www.linkedin.com/in/jane-doe/" {
+		t.Errorf("Referer = %q, want profile-specific referer", gotReferer)
 	}
 
 	var parsed map[string]any

@@ -20,6 +20,9 @@ coverage.html
 go.work
 go.work.sum
 
+# Local-only LinkedIn capture for optional mapper tests
+internal/linkedin/testdata/profile_live.json
+
 # OS and editor
 .DS_Store
 .idea/

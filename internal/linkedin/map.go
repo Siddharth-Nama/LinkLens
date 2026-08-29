@@ -34,6 +34,7 @@ func MapProfile(raw []byte, publicIdentifier, inputURL, canonicalURL string) (pr
 	out.About = firstNonEmpty(str(root["summary"]), str(root["about"]))
 	out.Industry = firstNonEmpty(str(root["industryName"]), str(root["industry"]))
 	out.ProfileID = urnID(str(root["entityUrn"]))
+	profileURN := str(root["entityUrn"])
 
 	out.Location = mapLocation(root, included)
 	out.ProfilePictures = mapProfilePictures(root)
@@ -41,15 +42,15 @@ func MapProfile(raw []byte, publicIdentifier, inputURL, canonicalURL string) (pr
 	out.ConnectionsCount = intPtr(root["connections"])
 	out.FollowersCount = intPtr(root["followersCount"])
 
-	out.Experience = mapExperiences(included)
-	out.Education = mapEducation(included)
-	out.Skills = mapSkills(included)
-	out.Certifications = mapCertifications(included)
-	out.Languages = mapLanguages(included)
-	out.Volunteer = mapVolunteer(included)
-	out.Projects = mapProjects(included)
-	out.Honors = mapHonors(included)
-	out.Publications = mapPublications(included)
+	out.Experience = mapExperiences(included, profileURN)
+	out.Education = mapEducation(included, profileURN)
+	out.Skills = mapSkills(included, profileURN)
+	out.Certifications = mapCertifications(included, profileURN)
+	out.Languages = mapLanguages(included, profileURN)
+	out.Volunteer = mapVolunteer(included, profileURN)
+	out.Projects = mapProjects(included, profileURN)
+	out.Honors = mapHonors(included, profileURN)
+	out.Publications = mapPublications(included, profileURN)
 
 	out.MissingSections = missingSections(out)
 	out.Partial = len(out.MissingSections) > 0
@@ -116,11 +117,42 @@ func findProfileEntity(idx includedIndex, publicIdentifier string, rootURNs []st
 		}
 	}
 	for _, ent := range idx.byType["com.linkedin.voyager.dash.identity.profile.Profile"] {
-		if id := str(ent["publicIdentifier"]); id == "" || id == publicIdentifier {
+		if str(ent["publicIdentifier"]) == publicIdentifier {
 			return ent, true
 		}
 	}
 	return nil, false
+}
+
+func belongsToProfile(item map[string]any, profileURN string) bool {
+	if profileURN == "" {
+		return true
+	}
+	refs := profileRefs(item)
+	if len(refs) == 0 {
+		return true
+	}
+	for _, ref := range refs {
+		if ref == profileURN {
+			return true
+		}
+	}
+	return false
+}
+
+func profileRefs(item map[string]any) []string {
+	var refs []string
+	for _, key := range []string{"*profile", "profileUrn", "*profileUrn"} {
+		if v := str(item[key]); v != "" {
+			refs = append(refs, v)
+		}
+	}
+	if p, ok := item["profile"].(map[string]any); ok {
+		if v := str(p["entityUrn"]); v != "" {
+			refs = append(refs, v)
+		}
+	}
+	return refs
 }
 
 func mapLocation(root map[string]any, idx includedIndex) profile.Location {
@@ -208,13 +240,16 @@ func vectorImages(node any) []profile.Image {
 	return out
 }
 
-func mapExperiences(idx includedIndex) []profile.Experience {
+func mapExperiences(idx includedIndex, profileURN string) []profile.Experience {
 	var out []profile.Experience
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Position") || strings.Contains(typ, "PositionGroup") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			exp := profile.Experience{
 				Title:       firstNonEmpty(str(item["title"]), str(item["multiLocaleTitle"])),
 				CompanyName: companyName(item, idx),
@@ -248,13 +283,16 @@ func companyName(item map[string]any, idx includedIndex) string {
 	return ""
 }
 
-func mapEducation(idx includedIndex) []profile.Education {
+func mapEducation(idx includedIndex, profileURN string) []profile.Education {
 	var out []profile.Education
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Education") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			ed := profile.Education{
 				SchoolName:  schoolName(item, idx),
 				Degree:      firstNonEmpty(str(item["degreeName"]), str(item["degree"])),
@@ -287,13 +325,16 @@ func schoolName(item map[string]any, idx includedIndex) string {
 	return ""
 }
 
-func mapSkills(idx includedIndex) []profile.Skill {
+func mapSkills(idx includedIndex, profileURN string) []profile.Skill {
 	var out []profile.Skill
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Skill") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			name := firstNonEmpty(str(item["name"]), str(item["skillName"]))
 			if name == "" {
 				continue
@@ -304,13 +345,16 @@ func mapSkills(idx includedIndex) []profile.Skill {
 	return out
 }
 
-func mapCertifications(idx includedIndex) []profile.Certification {
+func mapCertifications(idx includedIndex, profileURN string) []profile.Certification {
 	var out []profile.Certification
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Certification") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			name := str(item["name"])
 			if name == "" {
 				continue
@@ -327,13 +371,16 @@ func mapCertifications(idx includedIndex) []profile.Certification {
 	return out
 }
 
-func mapLanguages(idx includedIndex) []profile.Language {
+func mapLanguages(idx includedIndex, profileURN string) []profile.Language {
 	var out []profile.Language
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Language") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			name := firstNonEmpty(str(item["name"]), str(item["language"]))
 			if name == "" {
 				continue
@@ -344,13 +391,16 @@ func mapLanguages(idx includedIndex) []profile.Language {
 	return out
 }
 
-func mapVolunteer(idx includedIndex) []profile.Volunteer {
+func mapVolunteer(idx includedIndex, profileURN string) []profile.Volunteer {
 	var out []profile.Volunteer
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".VolunteerExperience") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			role := firstNonEmpty(str(item["role"]), str(item["title"]))
 			org := firstNonEmpty(str(item["companyName"]), str(item["organization"]))
 			if role == "" && org == "" {
@@ -369,13 +419,16 @@ func mapVolunteer(idx includedIndex) []profile.Volunteer {
 	return out
 }
 
-func mapProjects(idx includedIndex) []profile.Project {
+func mapProjects(idx includedIndex, profileURN string) []profile.Project {
 	var out []profile.Project
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Project") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			name := str(item["title"])
 			if name == "" {
 				name = str(item["name"])
@@ -395,13 +448,16 @@ func mapProjects(idx includedIndex) []profile.Project {
 	return out
 }
 
-func mapHonors(idx includedIndex) []profile.Honor {
+func mapHonors(idx includedIndex, profileURN string) []profile.Honor {
 	var out []profile.Honor
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Honor") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			title := firstNonEmpty(str(item["title"]), str(item["name"]))
 			if title == "" {
 				continue
@@ -417,13 +473,16 @@ func mapHonors(idx includedIndex) []profile.Honor {
 	return out
 }
 
-func mapPublications(idx includedIndex) []profile.Publication {
+func mapPublications(idx includedIndex, profileURN string) []profile.Publication {
 	var out []profile.Publication
 	for typ, items := range idx.byType {
 		if !strings.HasSuffix(typ, ".Publication") {
 			continue
 		}
 		for _, item := range items {
+			if !belongsToProfile(item, profileURN) {
+				continue
+			}
 			title := str(item["name"])
 			if title == "" {
 				title = str(item["title"])

@@ -1,0 +1,8 @@
+# Optional: real LinkedIn Voyager response for local mapper testing
+#
+# 1. Fetch a profile with valid cookies (or copy response from DevTools Network tab)
+# 2. Save the JSON body as profile_live.json in this folder
+# 3. Set LIVE_PROFILE_SLUG to the profile's public identifier
+# 4. Run: go test ./internal/linkedin/ -run LiveFixture -v
+#
+# profile_live.json is gitignored — never commit real session data or PII.
