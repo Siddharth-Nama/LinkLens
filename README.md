@@ -30,6 +30,140 @@ That matters because:
 
 ---
 
+## Recommended: run locally with your own LinkedIn session
+
+The hosted URL (Vercel) proves the assignment requirement — **public HTTPS API**. But LinkedIn cookies **die often** (hours to days). Every time they expire you must:
+
+1. Log into LinkedIn in your browser again
+2. Copy fresh `li_at` + `JSESSIONID`
+3. Update env vars on Vercel
+4. Redeploy
+
+That is painful for you **and** for anyone reviewing the project.
+
+**So for actually using the API or verifying it works, run it locally with your own session:**
+
+```bash
+git clone https://github.com/Siddharth-Nama/LinkLens.git
+cd LinkLens
+cp .env.example .env
+# paste YOUR cookies into .env (see flow below)
+make run
+```
+
+Then hit `http://localhost:8080` — updating `.env` takes 30 seconds. No redeploy, no Vercel dashboard.
+
+The live deployment may return **502** if cookies on the server have expired. That does **not** mean the code is broken. Clone the repo, add your cookies, run locally — you will get **200**.
+
+---
+
+## How to get a 200 response (strict flow)
+
+Follow these steps in order. Skip none.
+
+### Step 1 — Fresh LinkedIn cookies (your browser)
+
+1. Open Chrome and go to [linkedin.com](https://www.linkedin.com) — **must be logged in**.
+2. DevTools (`F12`) → **Application** → **Cookies** → `https://www.linkedin.com`
+3. Copy these two values:
+
+| Browser cookie | Put in `.env` as | Example shape |
+|----------------|------------------|---------------|
+| `li_at` | `LI_AT` | long alphanumeric string |
+| `JSESSIONID` | `LI_JSESSIONID` | `ajax:1739...` |
+
+**Rules:**
+- Paste **without** surrounding quotes → `ajax:123` not `"ajax:123"`
+- Do not paste the whole `JSESSIONID=...` line — value only
+- Use cookies from the **same** LinkedIn account you are logged in as
+
+### Step 2 — Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+```env
+LI_AT=<your li_at value>
+LI_JSESSIONID=<your jsessionid value, no quotes>
+API_KEY=any-secret-you-want          # optional locally
+PORT=8080
+```
+
+### Step 3 — Start the server
+
+```bash
+make run
+```
+
+Wait for log: `linklens ready` / `listening`.
+
+### Step 4 — Health check (must pass first)
+
+```bash
+curl http://localhost:8080/health
+```
+
+**Expected:**
+
+```json
+{"status":"ok","linkedin_configured":true}
+```
+
+If `linkedin_configured` is `false` → `LI_AT` is missing or empty in `.env`. Fix and restart.
+
+### Step 5 — Profile request (the actual 200)
+
+```bash
+curl "http://localhost:8080/v1/profiles?url=https://www.linkedin.com/in/williamhgates/"
+```
+
+If you set `API_KEY` in `.env`, add the header:
+
+```bash
+curl -H "X-API-Key: your-secret" \
+  "http://localhost:8080/v1/profiles?url=https://www.linkedin.com/in/williamhgates/"
+```
+
+**Expected:** HTTP **200** + JSON with `firstName`, `lastName`, `headline`, etc.
+
+Test a second profile to confirm the session works for more than one slug:
+
+```bash
+curl -H "X-API-Key: your-secret" \
+  "http://localhost:8080/v1/profiles?url=https://www.linkedin.com/in/siddharth-nama/"
+```
+
+### Step 6 — If you do not get 200
+
+| HTTP | Error code | Fix |
+|------|------------|-----|
+| 400 | `INVALID_URL` | Use a full `https://www.linkedin.com/in/{slug}/` URL |
+| 401 | `UNAUTHORIZED` | Add correct `X-API-Key` header (matches `API_KEY` in `.env`) |
+| 404 | `NOT_FOUND` | Profile hidden or slug wrong |
+| 502 | `SESSION_EXPIRED` | Cookies expired → repeat **Step 1** and restart server |
+| 502 | `UPSTREAM_ERROR` | Usually expired cookies or bad `JSESSIONID` format → repeat **Step 1** |
+
+**You do not need new cookies for each profile.** One good session fetches many profiles. Refresh only when **all** profiles start failing.
+
+### Hosted API (Vercel) — same flow, extra steps
+
+For `https://link-lens-5ejb.vercel.app` to return 200:
+
+1. Complete Steps 1–5 locally first (proves your cookies work).
+2. Copy the **same** `LI_AT`, `LI_JSESSIONID`, and `API_KEY` into [Vercel env vars](https://vercel.com/hi-ea86/link-lens-5ejb/settings/environment-variables).
+3. **Redeploy** (env changes are not live until redeploy).
+4. Test within an hour — cookies may die again later.
+
+```bash
+curl -H "X-API-Key: your-secret" \
+  "https://link-lens-5ejb.vercel.app/v1/profiles?url=https://www.linkedin.com/in/williamhgates/"
+```
+
+If Vercel returns 502 but local returns 200 → server cookies are stale. Update Vercel env and redeploy.
+
+---
+
 ## How it works
 
 ```mermaid
@@ -58,7 +192,7 @@ flowchart LR
 6. **Mapping** — walks LinkedIn's `included[]` array and picks out profile, positions, schools, skills, etc.
 7. **Response** — structured JSON with `partial` / `missingSections` when data is incomplete.
 
-You do **not** need fresh cookies for every new profile. One valid session can fetch many profiles. Refresh cookies only when the session dies (see [Session cookies](#session-cookies)).
+You do **not** need fresh cookies for every new profile. One valid session can fetch many profiles. Refresh cookies only when the session dies — see [How to get a 200 response](#how-to-get-a-200-response-strict-flow).
 
 ---
 
@@ -232,7 +366,11 @@ docker run --rm -p 8080:8080 --env-file .env linklens
 
 ## Deploy (HTTPS)
 
-The assignment needs a **public HTTPS** URL. Options:
+The assignment needs a **public HTTPS** URL. The repo is deployed at:
+
+**https://link-lens-5ejb.vercel.app**
+
+> **Note for reviewers:** The hosted API uses the submitter's LinkedIn session cookies in server env vars. Those cookies expire regularly. If the live URL returns 502, please **clone and run locally** with your own `LI_AT` / `LI_JSESSIONID` — see [How to get a 200 response](#how-to-get-a-200-response-strict-flow). The code and tests are the real deliverable; the hosted URL shows deployability.
 
 ### Vercel (current)
 
@@ -299,7 +437,8 @@ The mapper reads LinkedIn's `included[]` graph and matches entities by `$type` (
 ## Known limitations
 
 - **Not an official API** — runs on your personal LinkedIn session.
-- **Sessions expire** — refresh `LI_AT` / `JSESSIONID` when lookups fail across the board.
+- **Sessions expire** — refresh `LI_AT` / `LI_JSESSIONID` when lookups fail; **local `.env` is much easier than updating Vercel every time**.
+- **Hosted demo is fragile** — Vercel cookies go stale; prefer local run for hands-on testing.
 - **Rate limits** — LinkedIn may return 429; cache helps but does not remove the limit.
 - **Visibility** — you only see what your logged-in account can see.
 - **Partial profiles** — private or sparse profiles may return `partial: true`.
