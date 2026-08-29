@@ -50,6 +50,10 @@ func (c Config) LinkedInConfigured() bool {
 	return c.LinkedInLIAt != ""
 }
 
+func (c Config) APIKeyRequired() bool {
+	return c.APIKey != ""
+}
+
 func port() string {
 	raw, ok := os.LookupEnv("PORT")
 	if !ok {

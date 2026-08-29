@@ -35,6 +35,9 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.LinkedInConfigured() {
 		t.Error("LinkedInConfigured() = true, want false when LI_AT is empty")
 	}
+	if cfg.APIKeyRequired() {
+		t.Error("APIKeyRequired() = true, want false when API_KEY is empty")
+	}
 }
 
 func TestLoadFromEnv(t *testing.T) {
@@ -74,6 +77,9 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if !cfg.LinkedInConfigured() {
 		t.Error("LinkedInConfigured() = false, want true when LI_AT is set")
+	}
+	if !cfg.APIKeyRequired() {
+		t.Error("APIKeyRequired() = false, want true when API_KEY is set")
 	}
 }
 

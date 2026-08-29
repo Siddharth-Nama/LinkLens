@@ -25,6 +25,11 @@ func newMuxWithProfiles(cfg config.Config, profiles *service.ProfileService) *ht
 
 func profileHandler(cfg config.Config, profiles *service.ProfileService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !apiKeyAuthorized(cfg, r) {
+			writeUnauthorized(w)
+			return
+		}
+
 		if !cfg.LinkedInConfigured() {
 			writeJSON(w, http.StatusBadGateway, profile.NewError(
 				profile.CodeSessionExpired,

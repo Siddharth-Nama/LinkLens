@@ -87,6 +87,61 @@ func TestProfileHandlerSessionExpired(t *testing.T) {
 	assertErrorCode(t, rr, profile.CodeSessionExpired)
 }
 
+func TestProfileHandlerRequiresAPIKeyWhenConfigured(t *testing.T) {
+	cfg := config.Config{LinkedInLIAt: "cookie", APIKey: "secret-key"}
+	svc := service.NewProfile(handlerStubFetcher{})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/profiles?url=https://www.linkedin.com/in/jane-doe/", nil)
+	newMuxWithProfiles(cfg, svc).ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", rr.Code)
+	}
+	assertErrorCode(t, rr, profile.CodeUnauthorized)
+}
+
+func TestProfileHandlerRejectsWrongAPIKey(t *testing.T) {
+	cfg := config.Config{LinkedInLIAt: "cookie", APIKey: "secret-key"}
+	svc := service.NewProfile(handlerStubFetcher{})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/profiles?url=https://www.linkedin.com/in/jane-doe/", nil)
+	req.Header.Set(apiKeyHeader, "wrong-key")
+	newMuxWithProfiles(cfg, svc).ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", rr.Code)
+	}
+	assertErrorCode(t, rr, profile.CodeUnauthorized)
+}
+
+func TestProfileHandlerAcceptsValidAPIKey(t *testing.T) {
+	raw, err := os.ReadFile("../../internal/linkedin/testdata/profile_ok.json")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	cfg := config.Config{LinkedInLIAt: "cookie", APIKey: "secret-key"}
+	svc := service.NewProfile(handlerStubFetcher{body: raw})
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/profiles?url=https://www.linkedin.com/in/jane-doe/", nil)
+	req.Header.Set(apiKeyHeader, "secret-key")
+	newMuxWithProfiles(cfg, svc).ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestHealthWorksWithoutAPIKeyWhenConfigured(t *testing.T) {
+	cfg := config.Config{APIKey: "secret-key"}
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	newMuxWithProfiles(cfg, service.NewProfile(nil)).ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+}
+
 func assertErrorCode(t *testing.T, rr *httptest.ResponseRecorder, code string) {
 	t.Helper()
 	var body profile.ErrorBody
