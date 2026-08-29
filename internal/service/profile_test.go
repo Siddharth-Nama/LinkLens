@@ -23,7 +23,7 @@ func TestGetByURLSuccess(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 
-	svc := NewProfile(stubFetcher{body: raw})
+	svc := NewProfile(stubFetcher{body: raw}, 0)
 	got, err := svc.GetByURL(context.Background(), "https://www.linkedin.com/in/jane-doe/")
 	if err != nil {
 		t.Fatalf("GetByURL: %v", err)
@@ -34,7 +34,7 @@ func TestGetByURLSuccess(t *testing.T) {
 }
 
 func TestGetByURLInvalidInput(t *testing.T) {
-	svc := NewProfile(stubFetcher{})
+	svc := NewProfile(stubFetcher{}, 0)
 	_, err := svc.GetByURL(context.Background(), "https://www.linkedin.com/company/acme")
 	if err == nil {
 		t.Fatal("expected error for company url")
@@ -42,7 +42,7 @@ func TestGetByURLInvalidInput(t *testing.T) {
 }
 
 func TestGetByURLPropagatesLinkedInError(t *testing.T) {
-	svc := NewProfile(stubFetcher{err: linkedin.ErrSessionExpired})
+	svc := NewProfile(stubFetcher{err: linkedin.ErrSessionExpired}, 0)
 	_, err := svc.GetByURL(context.Background(), "https://www.linkedin.com/in/jane-doe/")
 	if err != linkedin.ErrSessionExpired {
 		t.Fatalf("error = %v", err)

@@ -78,8 +78,8 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 
 func newProfileService(cfg config.Config) *service.ProfileService {
 	if !cfg.LinkedInConfigured() {
-		return service.NewProfile(nil)
+		return service.NewProfile(nil, cfg.CacheTTL)
 	}
 	li := linkedin.New(cfg.LinkedInLIAt, cfg.LinkedInJSESSIONID, cfg.LinkedInTimeout)
-	return service.NewProfile(li)
+	return service.NewProfile(li, cfg.CacheTTL)
 }

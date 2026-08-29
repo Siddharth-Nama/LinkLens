@@ -14,6 +14,7 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("HTTP_READ_TIMEOUT", "")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "")
 	t.Setenv("LINKEDIN_TIMEOUT", "")
+	t.Setenv("CACHE_TTL", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -31,6 +32,9 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if cfg.LinkedInTimeout != 20*time.Second {
 		t.Errorf("LinkedInTimeout = %v, want 20s", cfg.LinkedInTimeout)
+	}
+	if cfg.CacheTTL != 15*time.Minute {
+		t.Errorf("CacheTTL = %v, want 15m", cfg.CacheTTL)
 	}
 	if cfg.LinkedInConfigured() {
 		t.Error("LinkedInConfigured() = true, want false when LI_AT is empty")
@@ -88,6 +92,7 @@ func TestLoadRejectsEmptyPort(t *testing.T) {
 	t.Setenv("HTTP_READ_TIMEOUT", "")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "")
 	t.Setenv("LINKEDIN_TIMEOUT", "")
+	t.Setenv("CACHE_TTL", "")
 
 	_, err := Load()
 	if err == nil {
@@ -100,6 +105,7 @@ func TestLoadRejectsInvalidDuration(t *testing.T) {
 	t.Setenv("HTTP_READ_TIMEOUT", "not-a-duration")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "")
 	t.Setenv("LINKEDIN_TIMEOUT", "")
+	t.Setenv("CACHE_TTL", "")
 
 	_, err := Load()
 	if err == nil {
@@ -112,6 +118,7 @@ func TestLoadRejectsNonPositiveDuration(t *testing.T) {
 	t.Setenv("HTTP_READ_TIMEOUT", "0s")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "")
 	t.Setenv("LINKEDIN_TIMEOUT", "")
+	t.Setenv("CACHE_TTL", "")
 
 	_, err := Load()
 	if err == nil {

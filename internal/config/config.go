@@ -15,6 +15,7 @@ type Config struct {
 	HTTPReadTimeout    time.Duration
 	HTTPWriteTimeout   time.Duration
 	LinkedInTimeout    time.Duration
+	CacheTTL           time.Duration
 }
 
 func Load() (Config, error) {
@@ -35,6 +36,10 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.LinkedInTimeout, err = envDuration("LINKEDIN_TIMEOUT", 20*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.CacheTTL, err = envDuration("CACHE_TTL", 15*time.Minute)
 	if err != nil {
 		return Config{}, err
 	}

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/Siddharth-Nama/LinkLens/internal/cache"
 	"github.com/Siddharth-Nama/LinkLens/internal/linkedin"
 	"github.com/Siddharth-Nama/LinkLens/internal/profile"
 	"github.com/Siddharth-Nama/LinkLens/internal/profileurl"
@@ -18,10 +20,15 @@ type Fetcher interface {
 
 type ProfileService struct {
 	fetcher Fetcher
+	cache   *cache.TTL[profile.Profile]
 }
 
-func NewProfile(fetcher Fetcher) *ProfileService {
-	return &ProfileService{fetcher: fetcher}
+func NewProfile(fetcher Fetcher, cacheTTL time.Duration) *ProfileService {
+	svc := &ProfileService{fetcher: fetcher}
+	if cacheTTL > 0 {
+		svc.cache = cache.NewTTL[profile.Profile](cacheTTL)
+	}
+	return svc
 }
 
 func (s *ProfileService) GetByURL(ctx context.Context, rawURL string) (profile.Profile, error) {
@@ -33,6 +40,14 @@ func (s *ProfileService) GetByURL(ctx context.Context, rawURL string) (profile.P
 		return profile.Profile{}, ErrLinkedInNotConfigured
 	}
 
+	if s.cache != nil {
+		if cached, ok := s.cache.Get(parsed.PublicIdentifier); ok {
+			cached.InputURL = parsed.Input
+			cached.CanonicalURL = parsed.CanonicalURL
+			return cached, nil
+		}
+	}
+
 	body, err := s.fetcher.FetchProfile(ctx, parsed.PublicIdentifier)
 	if err != nil {
 		return profile.Profile{}, err
@@ -41,6 +56,9 @@ func (s *ProfileService) GetByURL(ctx context.Context, rawURL string) (profile.P
 	out, err := linkedin.MapProfile(body, parsed.PublicIdentifier, parsed.Input, parsed.CanonicalURL)
 	if err != nil {
 		return profile.Profile{}, err
+	}
+	if s.cache != nil {
+		s.cache.Set(parsed.PublicIdentifier, out)
 	}
 	return out, nil
 }
